@@ -1142,12 +1142,19 @@ header .collapse:hover {
     position: relative;
     padding: 10px !important;
     border-bottom: 1px solid #f0f0f0;
-    height: 40px;
+    height: auto;
+    min-height: 40px;
     line-height: 18px;
     margin: 0 !important;
     cursor: pointer;
     overflow: hidden;
     white-space: pre;
+}
+
+.user-status-line {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 2px;
 }
 
 #left-sidebar.active #users > div {
