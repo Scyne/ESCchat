@@ -134,7 +134,7 @@ cat <<EOF > data/config.json
             "permissions": "admin"
         }
     },
-    "canonicalHost": "ec2-44-215-70-124.compute-1.amazonaws.com",
+    "canonicalHost": "ec2-44-215-70-124.compute-1.amazonaws.com:9090",
     "writableGroups": true
 }
 EOF
