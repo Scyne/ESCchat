@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Galène</title>
+    <title>ESCchat</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
@@ -20,7 +20,7 @@
       <div class="row full-height">
         <nav id="left-sidebar">
           <div class="users-header">
-            <div class="galene-header">Galène</div>
+            <div class="galene-header">ESCchat</div>
           </div>
           <div class="header-sep"></div>
           <div id="users"></div>
@@ -32,7 +32,7 @@
                 <div class="collapse" title="Collapse left panel" id="sidebarCollapse">
                   <i class="fas fa-align-left" aria-hidden="true"></i>
                 </div>
-                <h1 id="title" class="header-title">Galène</h1>
+                <h1 id="title" class="header-title">ESCchat</h1>
               </div>
 
               <ul class="nav-menu">
@@ -64,6 +64,9 @@
                   </div>
                 </li>
               </ul>
+              <div id="status-buttons" class="status-buttons">
+                  <!-- Buttons will be injected here -->
+              </div>
             </nav>
           </header>
           <div class="row full-width" id="mainrow">
@@ -118,11 +121,11 @@
                     <label>Enable at start:</label>
                     <div class="present-switch">
                       <p class="switch-radio">
-                        <input id="presentoff" type="radio" name="presentradio" value="" checked/>
+                        <input id="presentoff" type="radio" name="presentradio" value=""/>
                         <label for="presentoff">Nothing</label>
                       </p>
                       <p class="switch-radio">
-                        <input id="presentmike" type="radio" name="presentradio" value="mike"/>
+                        <input id="presentmike" type="radio" name="presentradio" value="mike" checked/>
                         <label for="presentmike">Microphone</label>
                       </p>
                       <p class="switch-radio">

@@ -635,6 +635,77 @@ function setLocalMute(mute, reflect) {
         updateSettings({localMute: mute});
 }
 
+/**
+ * Mutes or unmutes all incoming audio.
+ *
+ * @param {boolean} mute
+ */
+function muteIncomingAudio(mute) {
+    if(!serverConnection)
+        return;
+    for(let id in serverConnection.down) {
+        let c = serverConnection.down[id];
+        let media = document.getElementById('media-' + c.localId);
+        if(media && media instanceof HTMLMediaElement) {
+            media.muted = mute;
+        }
+    }
+}
+
+const statuses = ['Online', 'On Call', 'Break', 'Lunch', 'Away', 'Meeting'];
+
+/**
+ * Sets the user status.
+ *
+ * @param {string} status
+ */
+function setStatus(status) {
+    if(!status)
+        status = 'Online';
+
+    // Save to session storage
+    window.sessionStorage.setItem('status', status);
+
+    // Send to server
+    serverConnection.userAction('setdata', serverConnection.id, {
+        status: status,
+        statusTime: Date.now(),
+    });
+
+    // Handle mute logic
+    if (status === 'Online') {
+        setLocalMute(false, true);
+        muteIncomingAudio(false);
+    } else {
+        setLocalMute(true, true);
+        muteIncomingAudio(true);
+    }
+
+    updateStatusButtons(status);
+}
+
+function updateStatusButtons(currentStatus) {
+    const container = document.getElementById('status-buttons');
+    if (!container) return;
+
+    // Clear existing buttons
+    container.innerHTML = '';
+
+    statuses.forEach(s => {
+        let btn = document.createElement('button');
+        btn.textContent = s;
+        btn.classList.add('status-btn');
+        if (s === currentStatus) {
+            btn.classList.add('active');
+        }
+        btn.onclick = () => setStatus(s);
+        container.appendChild(btn);
+    });
+}
+
+// Initialize buttons on load
+updateStatusButtons('Online');
+
 getSelectElement('videoselect').onchange = function(e) {
     e.preventDefault();
     if(!(this instanceof HTMLSelectElement))
@@ -2073,6 +2144,12 @@ async function setMedia(c, mirror, video) {
                 media.muted = true;
         }
 
+        if(!c.up) {
+            let status = window.sessionStorage.getItem('status');
+            if(status && status !== 'Online')
+                media.muted = true;
+        }
+
         media.classList.add('media');
         media.autoplay = true;
         media.playsInline = true;
@@ -2558,6 +2635,20 @@ function userMenu(elt) {
         if(serverConnection.permissions.indexOf('present') >= 0 && canFile())
             items.push({label: 'Broadcast file', onClick: presentFile});
         items.push({label: 'Restart media', onClick: renegotiateStreams});
+
+        let statusItems = statuses.map(s => {
+            return {
+                label: s,
+                onClick: () => setStatus(s),
+            };
+        });
+
+        items.push({type: 'seperator'});
+        items.push({
+            type: 'submenu',
+            label: 'Status',
+            items: statusItems,
+        });
     } else {
         items.push({label: 'Send file', onClick: () => {
             sendFile(id);
@@ -2600,7 +2691,7 @@ function addUser(id, userinfo) {
     user.classList.add("user-p");
     setUserStatus(id, user, userinfo);
     user.addEventListener('click', function(e) {
-        let elt = e.target;
+        let elt = e.currentTarget;
         if(!elt || !(elt instanceof HTMLElement))
             throw new Error("Couldn't find user div");
         userMenu(elt);
@@ -2647,13 +2738,65 @@ function changeUser(id, userinfo) {
     setUserStatus(id, elt, userinfo);
 }
 
+function formatDuration(ms) {
+    if (ms < 0) ms = 0;
+    let seconds = Math.floor(ms / 1000);
+    let minutes = Math.floor(seconds / 60);
+    let hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+        return `${hours}h ${minutes % 60}m`;
+    }
+    return `${minutes}m`;
+}
+
+function updateUserStatusDisplay(id) {
+    let user = serverConnection.users[id];
+    if (!user) return;
+
+    let elt = document.getElementById('user-' + id);
+    if (!elt) return;
+
+    let statusLine = elt.querySelector('.user-status-line');
+    if (!statusLine) return;
+
+    let status = user.data.status;
+    let statusTime = user.data.statusTime;
+
+    if (status && status !== 'Online') {
+        let duration = '';
+        if (statusTime) {
+            duration = ' for ' + formatDuration(Date.now() - statusTime);
+        }
+        statusLine.textContent = `${status}${duration}`;
+        statusLine.style.display = 'block';
+    } else {
+        statusLine.textContent = '';
+        statusLine.style.display = 'none';
+    }
+}
+
 /**
  * @param {string} id
  * @param {HTMLElement} elt
  * @param {user} userinfo
  */
 function setUserStatus(id, elt, userinfo) {
-    elt.textContent = userinfo.username ? userinfo.username : '(anon)';
+    let nameElt = elt.querySelector('.user-name');
+    if(!nameElt) {
+        elt.textContent = '';
+        nameElt = document.createElement('div');
+        nameElt.classList.add('user-name');
+        elt.appendChild(nameElt);
+
+        let statusElt = document.createElement('div');
+        statusElt.classList.add('user-status-line');
+        elt.appendChild(statusElt);
+    }
+
+    nameElt.textContent = userinfo.username ? userinfo.username : '(anon)';
+    updateUserStatusDisplay(id);
+
     if(userinfo.data.raisehand)
         elt.classList.add('user-status-raisehand');
     else
@@ -2743,14 +2886,12 @@ function capitalise(s) {
  * @param {string} title
  */
 function setTitle(title) {
-    function set(title) {
-        document.title = title;
-        document.getElementById('title').textContent = title;
+    if(title) {
+        document.title = title + ' - ESCchat';
+    } else {
+        document.title = 'ESCchat';
     }
-    if(title)
-        set(title);
-    else
-        set('Galène');
+    document.getElementById('title').textContent = 'ESCchat';
 }
 
 /**
@@ -2834,6 +2975,11 @@ async function gotJoined(kind, group, perms, status, data, error, message) {
         setTitle((status && status.displayName) || capitalise(group));
         displayUsername();
         setButtonsVisibility();
+
+        let s = window.sessionStorage.getItem('status');
+        if(s)
+            setStatus(s);
+
         setChangePassword(pwAuth && !!groupStatus.canChangePassword &&
                           serverConnection.username
         );
@@ -4337,7 +4483,11 @@ document.getElementById('loginform').onsubmit = async function(e) {
         presentRequested = 'mike';
     else
         presentRequested = null;
-    getInputElement('presentoff').checked = true;
+    // Keep the selection or reset? User asked for default.
+    // Resetting to 'Nothing' (presentoff) forces user to re-select next time if they logout.
+    // But logic here just reads it.
+    // The request was "Users should by default be AUDIO ONLY".
+    // I changed the HTML checked attribute.
 
     // Connect to the server, gotConnected will join.
     serverConnect();
@@ -4485,5 +4635,13 @@ async function start() {
     }
     setViewportHeight();
 }
+
+setInterval(() => {
+    if(serverConnection && serverConnection.users) {
+        for(let id in serverConnection.users) {
+            updateUserStatusDisplay(id);
+        }
+    }
+}, 60000);
 
 start();
