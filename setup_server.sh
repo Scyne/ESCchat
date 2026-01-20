@@ -145,4 +145,4 @@ EOF
 echo "---------------------------------------"
 echo "Setup complete!"
 echo "You can now run the server from the build directory."
-echo "Suggested command: cd build && ./galene -http :9090"
+echo "Suggested command: cd build && ./galene -http :9090 -turn 44.215.70.124:1194"
