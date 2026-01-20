@@ -3,6 +3,9 @@
 # Stop on errors
 set -e
 
+# Kill any existing galene instances to ensure we don't conflict on ports
+pkill galene || true
+
 echo "--- Setting up Galene in ./build ---"
 
 # Prompt for clean build
@@ -74,7 +77,7 @@ read -s -p "Enter password for admin user 'Scyne': " scyne_pass
 echo
 scyne_hash=$(./galenectl hash-password -password "$scyne_pass")
 
-# Server Config
+# Server Config (Temporary without canonicalHost to allow localhost access)
 cat <<EOF > data/config.json
 {
     "users": {
@@ -83,7 +86,6 @@ cat <<EOF > data/config.json
             "permissions": "admin"
         }
     },
-    "canonicalHost": "ec2-44-215-70-124.compute-1.amazonaws.com",
     "writableGroups": true
 }
 EOF
@@ -116,11 +118,26 @@ while true; do
     read -p "Username: " uname
     read -s -p "Password: " upass
     echo
-    ./galenectl -config galenectl.json create-user -group Work -user "$uname" -password "$upass"
+    ./galenectl -config galenectl.json create-user -group Work -user "$uname"
+    ./galenectl -config galenectl.json set-password -group Work -user "$uname" -password "$upass"
 done
 
 # Stop Galene
 kill $GALENE_PID
+
+# Update Server Config with canonicalHost
+cat <<EOF > data/config.json
+{
+    "users": {
+        "Scyne": {
+            "password": $scyne_hash,
+            "permissions": "admin"
+        }
+    },
+    "canonicalHost": "ec2-44-215-70-124.compute-1.amazonaws.com",
+    "writableGroups": true
+}
+EOF
 
 # Move config.json to data/ if it isn't there (it is, we wrote it there)
 # But galenectl.json stays in root of build for admin use

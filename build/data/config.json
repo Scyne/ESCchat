@@ -1,0 +1,10 @@
+{
+    "users": {
+        "Scyne": {
+            "password": {"type":"bcrypt","key":"$2a$08$ZdEl5yGC4ClYgFMA0Qs62eyeriGwxlivD3d9/QBoz2yXekPGLlt8C"},
+            "permissions": "admin"
+        }
+    },
+    "canonicalHost": "ec2-44-215-70-124.compute-1.amazonaws.com",
+    "writableGroups": true
+}
