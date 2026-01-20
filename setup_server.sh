@@ -91,9 +91,9 @@ EOF
 # Galenectl Config (for local use)
 cat <<EOF > galenectl.json
 {
-    "url": "http://localhost:8443/",
-    "username": "Scyne",
-    "password": "$scyne_pass"
+    "server": "http://localhost:8443/",
+    "admin-username": "Scyne",
+    "admin-password": "$scyne_pass"
 }
 EOF
 
@@ -105,7 +105,7 @@ sleep 2
 
 # Create 'Work' group
 echo "Creating 'Work' group..."
-./galenectl create-group -group Work
+./galenectl -config galenectl.json create-group -group Work
 
 # User Creation Loop
 while true; do
@@ -116,7 +116,7 @@ while true; do
     read -p "Username: " uname
     read -s -p "Password: " upass
     echo
-    ./galenectl create-user -group Work -user "$uname" -password "$upass"
+    ./galenectl -config galenectl.json create-user -group Work -user "$uname" -password "$upass"
 done
 
 # Stop Galene
