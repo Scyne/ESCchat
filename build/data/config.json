@@ -1,7 +1,7 @@
 {
     "users": {
         "Scyne": {
-            "password": {"type":"bcrypt","key":"$2a$08$ZdEl5yGC4ClYgFMA0Qs62eyeriGwxlivD3d9/QBoz2yXekPGLlt8C"},
+            "password": {"type":"bcrypt","key":"$2a$08$TK5/O9CWwmk.gqD3Hhd/6O6meXEYmmj0QH9..3wWLpcfyW55v1qEu"},
             "permissions": "admin"
         }
     },

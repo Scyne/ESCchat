@@ -103,7 +103,7 @@ EOF
 echo "Starting Galene temporarily to setup groups and users..."
 ./galene -http :8443 -insecure > /dev/null 2>&1 &
 GALENE_PID=$!
-sleep 2
+sleep 5
 
 # Create 'Work' group
 echo "Creating 'Work' group..."
