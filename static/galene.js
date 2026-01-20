@@ -680,7 +680,31 @@ function setStatus(status) {
         setLocalMute(true, true);
         muteIncomingAudio(true);
     }
+
+    updateStatusButtons(status);
 }
+
+function updateStatusButtons(currentStatus) {
+    const container = document.getElementById('status-buttons');
+    if (!container) return;
+
+    // Clear existing buttons
+    container.innerHTML = '';
+
+    statuses.forEach(s => {
+        let btn = document.createElement('button');
+        btn.textContent = s;
+        btn.classList.add('status-btn');
+        if (s === currentStatus) {
+            btn.classList.add('active');
+        }
+        btn.onclick = () => setStatus(s);
+        container.appendChild(btn);
+    });
+}
+
+// Initialize buttons on load
+updateStatusButtons('Online');
 
 getSelectElement('videoselect').onchange = function(e) {
     e.preventDefault();
@@ -4459,7 +4483,11 @@ document.getElementById('loginform').onsubmit = async function(e) {
         presentRequested = 'mike';
     else
         presentRequested = null;
-    getInputElement('presentoff').checked = true;
+    // Keep the selection or reset? User asked for default.
+    // Resetting to 'Nothing' (presentoff) forces user to re-select next time if they logout.
+    // But logic here just reads it.
+    // The request was "Users should by default be AUDIO ONLY".
+    // I changed the HTML checked attribute.
 
     // Connect to the server, gotConnected will join.
     serverConnect();
