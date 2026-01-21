@@ -648,6 +648,15 @@ function muteIncomingAudio(mute) {
         let media = document.getElementById('media-' + c.localId);
         if(media && media instanceof HTMLMediaElement) {
             media.muted = mute;
+            let controls = document.getElementById('controls-' + c.localId);
+            if(controls) {
+                let volume = getVideoButton(controls, 'volume');
+                if(volume) {
+                    setVolumeButton(mute,
+                                    getVideoButton(controls, "volume-mute"),
+                                    getVideoButton(controls, "volume-slider"));
+                }
+            }
         }
     }
 }
