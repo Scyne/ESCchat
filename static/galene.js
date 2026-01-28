@@ -65,6 +65,42 @@ let token = null;
 let probingState = null;
 
 /**
+ * Stores the last known status of each user to detect transitions.
+ * @type {Object.<string, string>}
+ */
+let previousStatuses = {};
+
+/**
+ * The AudioContext used for notification tones.
+ * @type {AudioContext}
+ */
+let notificationContext = null;
+
+/**
+ * Plays a soft notification tone.
+ */
+function playNotificationTone() {
+    if(!notificationContext)
+        notificationContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    if(notificationContext.state === 'suspended')
+        notificationContext.resume().catch(e => console.warn(e));
+
+    let oscillator = notificationContext.createOscillator();
+    let gainNode = notificationContext.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(440, notificationContext.currentTime); // A4
+    gainNode.gain.setValueAtTime(0.1, notificationContext.currentTime); // Soft volume
+
+    oscillator.connect(gainNode);
+    gainNode.connect(notificationContext.destination);
+
+    oscillator.start();
+    oscillator.stop(notificationContext.currentTime + 0.15); // Short beep
+}
+
+/**
  * @typedef {Object} settings - the type of stored settings
  * @property {boolean} [localMute]
  * @property {string} [video]
@@ -280,6 +316,13 @@ function reflectSettings() {
         getInputElement('displayallbox').checked = settings.displayAll;
     } else {
         settings.displayAll = getInputElement('displayallbox').checked;
+        store = true;
+    }
+
+    if(settings.hasOwnProperty('onlineTone')) {
+        getInputElement('onlinetonebox').checked = settings.onlineTone;
+    } else {
+        settings.onlineTone = getInputElement('onlinetonebox').checked;
         store = true;
     }
 
@@ -909,6 +952,12 @@ getInputElement('displayallbox').onchange = function(e) {
         let elt = document.getElementById('peer-' + c.localId);
         showHideMedia(c, elt);
     }
+};
+
+getInputElement('onlinetonebox').onchange = function(e) {
+    if(!(this instanceof HTMLInputElement))
+        throw new Error('Unexpected type for this');
+    updateSettings({onlineTone: this.checked});
 };
 
 
@@ -1793,7 +1842,7 @@ async function addLocalMedia(localId) {
     /** @type{boolean|MediaTrackConstraints} */
     let audio = settings.audio ? {deviceId: settings.audio} : false;
     /** @type{boolean|MediaTrackConstraints} */
-    let video = settings.video ? {deviceId: settings.video} : false;
+    let video = settings.video ? {deviceId: {exact: settings.video}} : false;
 
     if(video) {
         let resolution = settings.resolution;
@@ -2846,6 +2895,21 @@ function delUser(id) {
  * @param {string} kind
  */
 function gotUser(id, kind) {
+    if (kind === 'add' || kind === 'change') {
+        let user = serverConnection.users[id];
+        let newStatus = (user && user.data && user.data.status) || 'Online';
+        let oldStatus = previousStatuses[id];
+
+        if (kind === 'change' && oldStatus && oldStatus !== 'Online' && newStatus === 'Online') {
+             if(getSettings().onlineTone) {
+                 playNotificationTone();
+             }
+        }
+        previousStatuses[id] = newStatus;
+    } else if (kind === 'delete') {
+        delete previousStatuses[id];
+    }
+
     switch(kind) {
     case 'add':
         addUser(id, serverConnection.users[id]);
